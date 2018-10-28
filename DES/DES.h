@@ -3,6 +3,7 @@
 
 #include <IOSTREAM>
 #include <cstdlib>
+#include <cstdint>
 
 using namespace std;
 

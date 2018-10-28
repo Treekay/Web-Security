@@ -1,16 +1,36 @@
+#include <string>
+#include <sstream>
+
 #include "DES.cpp"
 
-int main(void) {
-    uint64_t text = 0x9AC534E927B160D;
-    uint64_t key = 0x0000000000000000;
+using namespace std;
 
+int main(void) {
     // 测试加密
-    DES testEncrypt(text, text, 0);
-    uint64_t cipher = testEncrypt.outputText();
-    printf("Encryption: %016llx\n", cipher);
+
+    // 输入字符串
+    string str, k;
+    cout << "Input text: ";
+    cin >> str;
+    cout << "Input key: ";
+    cin >> k;
+    // 转化为64位
+    uint64_t text = 0;
+    stringstream s1;
+    s1 << str;
+    s1 >> text;
+    uint64_t key;
+    stringstream s2;
+    s2 << k;
+    s2 >> key;
+
     // 测试解密
-    DES testDecrypt(text, text, 1);
+    DES testEncrypt(text, key, 0);
+    uint64_t cipher = testEncrypt.outputText();
+    printf("Encryption:  %"PRIu64"\n", cipher);
+
+    DES testDecrypt(cipher, key, 1);
     uint64_t plain = testDecrypt.outputText();
-    printf("Decryption: %016llx\n", plain);
+    printf("Decryption:  %"PRIu64"\n", plain);
     return 0;
 }
