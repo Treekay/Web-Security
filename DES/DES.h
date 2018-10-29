@@ -9,8 +9,8 @@ using namespace std;
 
 class DES {
 private:
-    uint64_t plainText; // 明文
-    uint64_t cipherText; // 密文
+    uint64_t input; // 输入
+    uint64_t output; // 输出
     uint64_t key; // 用于生成子密钥的给定64位密钥 K
     uint64_t subkeys[16]; // 16个48位子密钥
     int mode; // 加密 or 解密
