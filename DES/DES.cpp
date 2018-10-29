@@ -3,45 +3,59 @@
 
 /**
  * @msg: 构造函数
+ * @param t: 输入的内容
+ * @parma k: 密钥
+ * @param m: 选择的模式 （0 加密 / 1 解密）
  */
 DES::DES(uint64_t text, uint64_t k, int m) {
     input = text;
     key = k;
     mode = m;
-    initialPermutation();  // 初始IP置换
-    subkeyGeneration();    // 子密钥生成
-    TIteration();   // 十六轮迭代
-    inversePermutation(); // 逆置换
+    if (mode == 0)
+        cout << "Encrypt: " << text << " -> ";
+    else
+        cout << "Dectypt: " << text << " -> ";
+
+    subkeyGeneration(key);    // 子密钥生成
+    
+    uint64_t M = input;
+    uint64_t M0 = initialPermutation(M); // 初始IP置换
+    uint64_t RL = TIteration(M0);         // 十六轮迭代
+    uint64_t C = inversePermutation(RL);  // 逆置换
+    outputText();
 }
 
 /**
  * @msg: 初始IP置换
+ * @param M: 初始明文块
  */
-void DES::initialPermutation() {
-    M = 0;
+uint64_t DES::initialPermutation(uint64_t M) {
     // 初始IP置换
+    uint64_t M0 = 0;
     for (int i = 0; i < 64; i++) {
-        M <<= 1;
-        M |= (input >> (64 - IP[i])) & 0x0000000000000001;
+        M0 <<= 1;
+        M0 |= (input >> (64 - IP[i])) & 0x0000000000000001;
     }
+    return M0;
 }
 
 /**
  * @msg: 生成子密钥
+ * @param key: 密钥
  */
-void DES::subkeyGeneration() {
+void DES::subkeyGeneration(uint64_t key) {
     /* 生成16个子密钥 */
 
     /* PC-1置换 */
-    uint64_t C0D0 = 0; // 密钥K实行PC-1置换之后的结果
+    uint64_t realKey = 0; // 密钥K实行PC-1置换之后的结果
     for (int i = 0; i < 56; i++) {
-        C0D0 <= 1;
-        C0D0 |= (key >> (64 - PC1[i])) & 0x0000000000000001;
+        realKey <= 1;
+        realKey |= (key >> (64 - PC1[i])) & 0x0000000000000001;
     }
-    uint32_t C = (uint32_t)((C0D0 >> 28) & 0x000000000fffffff); // 前28位
-    uint32_t D = (uint32_t)(C0D0 & 0x000000000fffffff); // 后28位
+    uint32_t C = (uint32_t)((realKey >> 28) & 0x000000000fffffff); // 前28位
+    uint32_t D = (uint32_t)(realKey & 0x000000000fffffff); // 后28位
 
-    /* 计算16个子密钥 */
+    /* 生成16个子密钥 */
     for (int i = 0; i < 16; i++) {
 
         /* LS置换 */
@@ -66,49 +80,38 @@ void DES::subkeyGeneration() {
  * @param {type} 
  * @return: 
  */
-void DES::feistelFunction(int n) {
-    uint64_t Ri = 0;
+uint32_t DES::feistelFunction(uint32_t R, uint64_t subkey) {
     /* E 扩展 */
     // 将32位的 R 扩展成48位的串 E
+    uint64_t resE = 0;
     for (int i = 0; i < 48; i++) {
-        Ri <<= 1;
-        Ri |= (uint64_t)((R >> (32 - E[i])) & 0x00000001);
+        resE <<= 1;
+        resE |= (uint64_t)((R >> (32 - E[i])) & 0x00000001);
     }
 
     // E与子密钥作48位二进制按位异或运算
-    if (mode == 0) {
-        // encryption
-        Ri = Ri ^ subkeys[n];
-    }
-    else {
-        // decryption
-        Ri = Ri ^ subkeys[15 - n];
-    }
+    resE = resE ^ subkey;
 
     // 将E均分成八组与8个S盒进行6-4转换, 得到8个长度分别位4位的分组
-    uint32_t F = 0;
+    uint32_t resS = 0;
     for (int i = 0; i < 8; i++) {
-        char row = (char)((Ri & (0x0000840000000000 >> 6 * i)) >> 42 - 6 * i);
+        char row = (char)((resE & (0x0000840000000000 >> 6 * i)) >> 42 - 6 * i);
         row = (row >> 4) | row & 0x01;
-
-        char column = (char)((Ri & (0x0000780000000000 >> 6 * i)) >> 43 - 6 * i);
+        char column = (char)((R & (0x0000780000000000 >> 6 * i)) >> 43 - 6 * i);
 
         // 将分组结果顺序连接得到32位串
-        F <<= 4;
-        F |= (uint32_t)(S[i][16 * row + column] & 0x0f);
+        resS <<= 4;
+        resS |= (uint32_t)(S[i][16 * row + column] & 0x0f);
     }
 
     // P 置换得到结果
-    uint32_t res = 0;
+    uint32_t resP = 0;
     for (int i = 0; i < 32; i++) {
-        res <<= 1;
-        res |= (F >> (32 - P[i])) & 0x0000000000000001;
+        resP <<= 1;
+        resP |= (resS >> (32 - P[i])) & 0x0000000000000001;
     }
 
-    // 交换L, R用于下一轮
-    uint32_t temp = R;
-    R = L ^ res;
-    L = temp;
+    return resP;
 }
 
 /**
@@ -116,15 +119,24 @@ void DES::feistelFunction(int n) {
  * @param {type} 
  * @return: 
  */
-void DES::TIteration() {
-    L = (uint32_t)((M >> 32) & 0x00000000ffffffff);
-    R = (uint32_t)(M & 0x00000000ffffffff);
+uint64_t DES::TIteration(uint64_t M0) {
+    uint32_t L = (uint32_t)((M0 >> 32) & 0x00000000ffffffff);
+    uint32_t R = (uint32_t)(M0 & 0x00000000ffffffff);
     for (int i = 0; i < 16; i++) {
-        feistelFunction(i);
+        uint32_t subkey, temp;
+        if (mode == 0) // encryption
+            subkey = subkeys[i];
+        else // decryption
+            subkey = subkeys[15 - i];
+        
+        temp = R;
+        R = L ^ feistelFunction(R, subkey);
+        L = temp;
     }
-    /* 交换置换 */
+    /* W 置换 */
     // 左右交换 L16-R16 得到 R16-L16, 连接
-    T = ((uint64_t)R << 32) | (uint64_t)L;
+    uint64_t RL = ((uint64_t)R << 32) | (uint64_t)L;
+    return RL;
 }
 
 
@@ -134,13 +146,14 @@ void DES::TIteration() {
  * @param {type} 
  * @return: 
  */
-void DES::inversePermutation() {
-    C = 0;
+uint64_t DES::inversePermutation(uint64_t RL) {
+    uint64_t C = 0;
     for (int i = 0; i < 64; i++) {
         C <<= 1;
-        C |= (T >> (64 - Inverse_IP[i])) & 0x0000000000000001;
+        C |= (RL >> (64 - Inverse_IP[i])) & 0x0000000000000001;
     }
     output = C;
+    return C;
 }
 
 /**
@@ -150,5 +163,5 @@ void DES::inversePermutation() {
  */
 uint64_t DES::outputText() {
     // 输出64位
-    return output;
+    cout << output << endl;
 }

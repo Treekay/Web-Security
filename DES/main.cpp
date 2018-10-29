@@ -18,10 +18,6 @@ int main(void) {
     
     // 测试
     DES testEncrypt(text, key, mode);
-    uint64_t output = testEncrypt.outputText();
-    if (mode == 0)
-        cout << "Encryption: " << output << endl;
-    else 
-        cout << "Decryption: " << output << endl;
+    
     return 0;
 }
