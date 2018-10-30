@@ -123,9 +123,8 @@ bitset<64> charsToBitset(const char s[8]) {
     return bits;
 }
 
-
-string readFileToString(const char * filename) {
-    fstream file(filename);
+string readFileToString(string filename) {
+    fstream file(filename.c_str());
     //将文件读入到ostringstream对象buffer中
     ostringstream buffer;
     char ch;
@@ -136,24 +135,36 @@ string readFileToString(const char * filename) {
     return buffer.str();
 }
 
-vector<bitset<64>> ECB(string input) {
+vector<bitset<64>> PKCS_IN(string input, int mode) {
+    size_t len = input.length();
+    size_t blocksNum = len / 8; 
+    if (mode == 0) {
+        // 补位
+        size_t addNum = 8 - len % 8;
+        for (size_t i = 0; i < addNum; i++) {
+            input += to_string(addNum);
+        }
+        blocksNum++;
+    }
+    // 分组, 每组64位
     vector<bitset<64>> blocks;
-    int len = input.length();
-    int blocksNum = len / 8; // 分组数, 每组64位
-    for (int i = 0; i < blocksNum; i++) {
+    for (size_t i = 0; i < blocksNum; i++) {
         string s = input.substr(i * 8, 8);
         blocks.push_back(charsToBitset(s.c_str()));
     }
-    // 补位
-    if (len % 8) {
-        int addNum = 8 - len % 8;
-        string s = input.substr(len - len % 8);
-        for (int i = 0; i < addNum; i++) {
-            s += to_string(addNum);
-        }
-        blocks.push_back(charsToBitset(s.c_str()));
-    }
     return blocks;
+}
+
+void PKCS_OUT(string outputPath, int mode) {
+    if (mode == 0) return;
+    string str = readFileToString(outputPath);
+    size_t len = str.length(); // 字符串长度
+    size_t num = str[len-1] - '0'; // 需要删除的位数
+    str.erase(len - num, num);
+    fstream file;
+    file.open(outputPath.c_str(), ios::binary | ios::out);
+    file << str;
+    file.close();
 }
 
 #endif // !_TABLE_H

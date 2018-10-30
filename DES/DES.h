@@ -22,7 +22,7 @@ private:
     bitset<64> TIteration(bitset<64>);                  // 十六轮迭代T
     bitset<64> inversePermutation(bitset<64>);          // 逆置换
 public:
-    DES(bitset<64>, bitset<64>, int);                           // 构造函数
+    DES(bitset<64>, bitset<64>, int);           // 构造函数
     bitset<64> outputText();                    // 输出64位
 };
 

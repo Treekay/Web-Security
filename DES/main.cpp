@@ -18,20 +18,23 @@ int main() {
     // 输入密钥
     cout << "key: ";
     cin >> key;
-    input = readFileToString(inputPath.c_str()); // 读取内容
+    input = readFileToString(inputPath); // 读取内容
 
     /* 构建64位块 */
-    vector<bitset<64>> blocks = ECB(input);
+    vector<bitset<64>> blocks = PKCS_IN(input, mode);
     // 分多次将每个64位块分别加密
-    for (int i = 0; i < blocks.size(); i++) {
-        // 解密 or 加密
+    for (size_t i = 0; i < blocks.size(); i++) {
+        // DES 过程
         DES des(blocks[i], charsToBitset(key.c_str()), mode);
         bitset<64> cipher = des.outputText();
-        // 将结果写入文件
+        // 写入文件
         file.open(outputPath.c_str(), ios::binary | ios::app);
         file.write((char *)&cipher, sizeof(cipher));
         file.close();
     }
+    // 最后一块包含补全位数, 需要特殊处理
+    PKCS_OUT(outputPath, mode);
+
     // 删除输入文件
     if (mode == 0) {
         remove("plain");
@@ -39,12 +42,6 @@ int main() {
     else {
         remove("cipher");
     }
-    
-    // 输出结果
-    // output = readFileToString(outputPath.c_str());
-    // cout << "key: " << key << endl;
-    // cout << "input: " << input << endl;
-    // cout << "output: " << output << endl;
 
     return 0;
 }

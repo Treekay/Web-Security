@@ -103,19 +103,34 @@ bitset<32> DES::feistel(bitset<32> R, bitset<48> Ki) {
     resE = resE ^ Ki;
 
     // 将E均分成八组
+    bitset<6> Ei[8];
+    for (int i = 0; i < 8; i++) {
+        Ei[i][0] = resE[i * 8];
+        Ei[i][1] = resE[i * 8 + 1];
+        Ei[i][2] = resE[i * 8 + 2];
+        Ei[i][3] = resE[i * 8 + 3];
+        Ei[i][4] = resE[i * 8 + 4];
+        Ei[i][5] = resE[i * 8 + 5];
+    }
     // 与8个S盒进行6-4转换, 得到8个长度分别位4位的分组
+    bitset<4> Si[8];
+    for (int i = 0; i < 8; i++) {
+        int row = Ei[i][0] * 2 + Ei[i][5];
+        int col = Ei[i][1] + Ei[i][2] + Ei[i][3] + Ei[i][4];
+        int num = S[i][row][col];
+        bitset<4> binary(num);
+        Si[i][0] = binary[0];
+        Si[i][1] = binary[1];
+        Si[i][2] = binary[2];
+        Si[i][3] = binary[3];
+    }
     // 将分组结果按顺序连接得到32位的串
     bitset<32> resS;
-    for (int i = 0, x = 0; i < 48; i += 6, x += 4) {
-        int row = resE[47 - i] * 2 + resE[47 - i - 5];
-        int col = resE[47 - i - 1] * 8 + resE[47 - i - 2] * 4 + resE[47 - i - 3] * 2 + resE[47 - i - 4];
-        int num = S[i / 6][row][col];
-        bitset<4> binary(num);
-        resS[31 - x] = binary[3];
-        resS[31 - x - 1] = binary[2];
-        resS[31 - x - 2] = binary[1];
-        resS[31 - x - 3] = binary[0];
-        x += 4;
+    for (int i = 0; i < 8; i++) {
+        resS[i * 4] = Si[i][0];
+        resS[i * 4 + 1] = Si[i][1];
+        resS[i * 4 + 2] = Si[i][2];
+        resS[i * 4 + 3] = Si[i][3];
     }
 
     // P 置换得到结果
