@@ -1,7 +1,11 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
+#include <VECTOR>
 #include <BITSET>
+#include <cmath>
+#include <fstream>
+#include <sstream>
 
 /* 初始IP置换表 */
 static int IP[] = {
@@ -107,5 +111,49 @@ static int PC2[] = {
 /* 左移表 */
 static int LS[] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+
+bitset<64> charsToBitset(const char s[8]) {
+    bitset<64> bits;
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            // 在bitset中，位顺序是倒序0-n,对应最高位-最低位
+            bits[i * 8 + j] = ((s[i] >> j) & 1); 
+        }
+    }
+    return bits;
+}
+
+
+string readFileToString(const char * filename) {
+    fstream file(filename);
+    //将文件读入到ostringstream对象buffer中
+    ostringstream buffer;
+    char ch;
+    while (buffer && file.get(ch)) {
+        buffer.put(ch);
+    }
+    //返回与流对象buf关联的字符串
+    return buffer.str();
+}
+
+vector<bitset<64>> ECB(string input) {
+    vector<bitset<64>> blocks;
+    int len = input.length();
+    int blocksNum = len / 8; // 分组数, 每组64位
+    for (int i = 0; i < blocksNum; i++) {
+        string s = input.substr(i * 8, 8);
+        blocks.push_back(charsToBitset(s.c_str()));
+    }
+    // 补位
+    if (len % 8) {
+        int addNum = 8 - len % 8;
+        string s = input.substr(len - len % 8);
+        for (int i = 0; i < addNum; i++) {
+            s += to_string(addNum);
+        }
+        blocks.push_back(charsToBitset(s.c_str()));
+    }
+    return blocks;
+}
 
 #endif // !_TABLE_H

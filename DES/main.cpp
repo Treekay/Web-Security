@@ -1,46 +1,50 @@
 #include "DES.cpp"
-#include <fstream>
-
-bitset<64> charToBitset(const char s[8]) {
-	bitset<64> bits;
-	for(int i=0; i<8; ++i)
-		for(int j=0; j<8; ++j)
-			bits[i*8+j] = ((s[i]>>j) & 1);
-	return bits;
-}
 
 int main() {
+    int mode; 
+    fstream file;
+    string input, key, output, inputPath, outputPath;
+
     // 选择加密或解密
-    int mode; // 0 Encrypt / 1 Decrypt
-    cout << "Mode: ";
+    cout << "mode: ";
     cin >> mode;
-    // 输入内容和密钥
-    string s, k;
-    cout << "Input: ";
-    cin >> s;
-    cout << "Key: ";
-    cin >> k;
-    bitset<64> plain = charToBitset(s.c_str());
-    bitset<64> key = charToBitset(k.c_str());
+    if (mode == 0) {
+        inputPath = "plain";
+        outputPath = "cipher";
+    } else {
+        inputPath = "cipher";
+        outputPath = "plain";
+    }
+    // 输入密钥
+    cout << "key: ";
+    cin >> key;
+    input = readFileToString(inputPath.c_str()); // 读取内容
 
-    DES des1(plain, key, 0);
-    auto cipher = des1.outputText();
-    fstream file1;
-    file1.open("cipher", ios::binary | ios::out);
-    file1.write((char *)&cipher, sizeof(cipher));
-    file1.close();
-
-    // 解密
-    bitset<64> temp;
-    file1.open("cipher", ios::binary | ios::in);
-    file1.read((char *)&temp, sizeof(temp));
-    file1.close();
-
-    DES des2(temp, key, 1);
-    auto temp_plain = des2.outputText();
-    file1.open("plain", ios::binary | ios::out);
-    file1.write((char *)&temp_plain, sizeof(temp_plain));
-    file1.close();
+    /* 构建64位块 */
+    vector<bitset<64>> blocks = ECB(input);
+    // 分多次将每个64位块分别加密
+    for (int i = 0; i < blocks.size(); i++) {
+        // 解密 or 加密
+        DES des(blocks[i], charsToBitset(key.c_str()), mode);
+        bitset<64> cipher = des.outputText();
+        // 将结果写入文件
+        file.open(outputPath.c_str(), ios::binary | ios::app);
+        file.write((char *)&cipher, sizeof(cipher));
+        file.close();
+    }
+    // 删除输入文件
+    if (mode == 0) {
+        remove("plain");
+    }
+    else {
+        remove("cipher");
+    }
     
+    // 输出结果
+    // output = readFileToString(outputPath.c_str());
+    // cout << "key: " << key << endl;
+    // cout << "input: " << input << endl;
+    // cout << "output: " << output << endl;
+
     return 0;
 }

@@ -8,11 +8,10 @@
 
 using namespace std;
 
-class DES
-{
-  private:
-    bitset<64> plainText;           // 输入
-    bitset<64> cipherText;          // 输出
+class DES {
+private:
+    bitset<64> plainText;   // 输入
+    bitset<64> cipherText;  // 输出
     bitset<64> key;                 // 用于生成子密钥的给定64位密钥 K
     bitset<48> subkeys[16];         // 16个48位子密钥
     int mode;                       // 加密 or 解密
@@ -22,9 +21,9 @@ class DES
     bitset<32> feistel(bitset<32>, bitset<48>);         // 轮函数
     bitset<64> TIteration(bitset<64>);                  // 十六轮迭代T
     bitset<64> inversePermutation(bitset<64>);          // 逆置换
-  public:
+public:
     DES(bitset<64>, bitset<64>, int);                           // 构造函数
-    bitset<64> outputText();                                  // 输出64位
+    bitset<64> outputText();                    // 输出64位
 };
 
 #endif // !_DES_H

@@ -1,5 +1,5 @@
 #include "DES.h"
-#include "table.h"
+#include "utils.h"
 
 /**
  * @msg: 构造函数
@@ -8,14 +8,9 @@
  * @param m: 选择的模式 （0 加密 / 1 解密）
  */
 DES::DES(bitset<64> s, bitset<64> k, int m) {
-    mode = m;
-    // if (mode == 0)
-    //     cout << "Encrypt: " << s << " -> ";
-    // else
-    //     cout << "Dectypt: " << s << " -> ";
-
     plainText = s;
     key = k;
+    mode = m;
 
     // 子密钥生成
     subkeyGeneration(key);
@@ -26,7 +21,7 @@ DES::DES(bitset<64> s, bitset<64> k, int m) {
     bitset<64> RL = TIteration(M0);          // 十六轮迭代
     bitset<64> C = inversePermutation(RL);    // 逆置换
     cipherText = C;
-    outputText();
+    //outputText();
 }
 
 /**
@@ -74,6 +69,7 @@ void DES::subkeyGeneration(bitset<64> key) {
             C[j] = tempC[(j + 28 - shift) % 28];
             D[j] = tempD[(j + 28 - shift) % 28];
         }
+
         // 将左右两部分重新组合成56位
         bitset<56> LR;
         for (int j = 28; j < 56; j++) {
@@ -82,6 +78,7 @@ void DES::subkeyGeneration(bitset<64> key) {
         for (int j = 0; j < 28; j++) {
             LR[j] = D[j];
         }
+
         /* PC-2 压缩置换 */
         for (int j = 0; j < 48; j++) {
             subkeys[i][47 - j] = LR[56 - PC2[j]];
@@ -96,12 +93,15 @@ void DES::subkeyGeneration(bitset<64> key) {
  */
 bitset<32> DES::feistel(bitset<32> R, bitset<48> Ki) {
     /* E 扩展 */
-    bitset<48> resE; // 将32位的串R作E-扩展之后的结果
+    bitset<48> resE; 
+    // 将32位的串R作E-扩展之后的结果
     for (int i = 0; i < 48; i++) {
         resE[47 - i] = R[32 - E[i]];
     }
+
     // resE与子密钥作48位二进制按位异或运算
     resE = resE ^ Ki;
+
     // 将E均分成八组
     // 与8个S盒进行6-4转换, 得到8个长度分别位4位的分组
     // 将分组结果按顺序连接得到32位的串
@@ -117,6 +117,7 @@ bitset<32> DES::feistel(bitset<32> R, bitset<48> Ki) {
         resS[31 - x - 3] = binary[0];
         x += 4;
     }
+
     // P 置换得到结果
     bitset<32> resP;
     for (int i = 0; i < 32; i++) {
@@ -139,6 +140,7 @@ bitset<64> DES::TIteration(bitset<64> M0) {
     for (int i = 0; i < 32; i++) {
         R[i] = M0[i];
     }
+
     /* 16 次迭代 */
     bitset<32> nextL;
     for (int i = 0; i < 16; i++) {
@@ -151,6 +153,7 @@ bitset<64> DES::TIteration(bitset<64> M0) {
         R = L ^ f;
         L = nextL;
     }
+
     /* W 置换 */
     // 左右交换 L16-R16 得到 R16-L16, 连接
     bitset<64> RL;
@@ -182,6 +185,5 @@ bitset<64> DES::inversePermutation(bitset<64> RL) {
  * @return: 
  */
 bitset<64> DES::outputText() {
-    // 输出64位
     return cipherText;
 }
