@@ -6,6 +6,10 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <cstring>
+#include <cstdlib>
+
+using namespace std;
 
 /* 初始IP置换表 */
 static int IP[] = {
@@ -123,48 +127,75 @@ bitset<64> charsToBitset(const char s[8]) {
     return bits;
 }
 
-string readFileToString(string filename) {
-    fstream file(filename.c_str());
+string readFileToString(string filePath) {
+    fstream file(filePath.c_str());
     //将文件读入到ostringstream对象buffer中
     ostringstream buffer;
     char ch;
     while (buffer && file.get(ch)) {
         buffer.put(ch);
     }
+    file.close();
     //返回与流对象buf关联的字符串
     return buffer.str();
 }
 
-vector<bitset<64>> PKCS_IN(string input, int mode) {
-    size_t len = input.length();
-    size_t blocksNum = len / 8; 
+/*
+ 写入文件
+ */
+void writeFileToString(bitset<64> bits, string filePath, int mode) {
+    fstream file;
+    file.open(filePath.c_str(), ios::binary | ios::app);
     if (mode == 0) {
+        file << bits.to_string();
+        file.close();
+    }
+    else if (mode == 1) {
+        file.write((char *)&bits, sizeof(bits));
+        file.close();
+    }
+}
+
+vector<bitset<64>> PKCS_IN(string input, int mode) {
+    vector<bitset<64>> blocks;
+    int len = input.length();
+    if (mode == 0) {
+        int blocksNum = len / 8 + 1;
         // 补位
-        size_t addNum = 8 - len % 8;
-        for (size_t i = 0; i < addNum; i++) {
+        int addNum = 8 - len % 8;
+        for (int i = 0; i < addNum; i++) {
             input += to_string(addNum);
         }
-        blocksNum++;
+        // 分组, 每组64位
+        for (int i = 0; i < blocksNum; i++) {
+            string s = input.substr(i * 8, 8);
+            bitset<64> bits = charsToBitset(s.c_str());
+            blocks.push_back(bits);
+        }
     }
-    // 分组, 每组64位
-    vector<bitset<64>> blocks;
-    for (size_t i = 0; i < blocksNum; i++) {
-        string s = input.substr(i * 8, 8);
-        blocks.push_back(charsToBitset(s.c_str()));
+    else if (mode == 1) {
+        int blocksNum = len / 64;
+        for (int i = 0; i < blocksNum; i++) {
+            bitset<64> bits = bitset<64>(input.substr(i * 64, 64));
+            blocks.push_back(bits);
+        }
     }
+    remove("cipher");
     return blocks;
 }
 
 void PKCS_OUT(string outputPath, int mode) {
-    if (mode == 0) return;
-    string str = readFileToString(outputPath);
-    size_t len = str.length(); // 字符串长度
-    size_t num = str[len-1] - '0'; // 需要删除的位数
-    str.erase(len - num, num);
-    fstream file;
-    file.open(outputPath.c_str(), ios::binary | ios::out);
-    file << str;
-    file.close();
+    if (mode != 0) {
+        string str = readFileToString(outputPath);
+        int len = str.length(); // 字符串长度
+        if (isdigit(str[len-1])) {
+            int num = str[len-1] - '0'; // 需要删除的位数
+            if (num < 0 || num > len) {
+                str.erase(len - num, num);
+            }
+        }
+        cout << "plain: " << str << endl;
+    }
 }
 
 #endif // !_TABLE_H
