@@ -115,17 +115,28 @@ static int PC2[] = {
 /* 左移表 */
 static int LS[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 
+
+/**
+ * @msg: 将字符串转换位64位块
+ * @param s: 8个字节长度的字符串    
+ * @return: 64位bitset
+ */
 bitset<64> charsToBitset(const char s[8]) {
     bitset<64> bits;
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            // 在bitset中，位顺序是倒序0-n,对应最高位-最低位
+            // 每个s[i]在bitset中是倒序存储，但s[0] ~ s[8]是按顺序存储
             bits[i * 8 + j] = ((s[i] >> j) & 1); 
         }
     }
     return bits;
 }
 
+/**
+ * @msg: 从文件中读出全部字符
+ * @param filePath: 文件路径 
+ * @return: 文件中全部字符构成的一个字符串
+ */
 string readFileToString(string filePath) {
     fstream file(filePath.c_str());
     //将文件读入到ostringstream对象buffer中
@@ -139,8 +150,11 @@ string readFileToString(string filePath) {
     return buffer.str();
 }
 
-/*
- 写入文件
+/**
+ * @msg: 将64位数据写入文件
+ * @param bits: 64位bitset
+ * @param filePath: 文件路径
+ * @param mode: 当前的模式 0-加密， 1-解密 
  */
 void writeFileToString(bitset<64> bits, string filePath, int mode) {
     fstream file;
@@ -155,12 +169,19 @@ void writeFileToString(bitset<64> bits, string filePath, int mode) {
     }
 }
 
+/**
+ * @msg: 将输入内容划分成64位一组的分组
+ * @param input: 输入的内容
+ * @param mode: 当前的模式 
+ * @return: 存有全部64位块的向量
+ */
 vector<bitset<64>> PKCS_IN(string input, int mode) {
     vector<bitset<64>> blocks;
     int len = input.length();
+    // 加密模式，将输入内容按8个字节一组分成64位的块
     if (mode == 0) {
         int blocksNum = len / 8 + 1;
-        // 补位
+        // 对最后一块不足64位的块要补位，补上值为欠缺字节数；若未补位时恰好满足，也要补上8个0x08
         int addNum = 8 - len % 8;
         for (int i = 0; i < addNum; i++) {
             input += to_string(addNum);
@@ -172,6 +193,7 @@ vector<bitset<64>> PKCS_IN(string input, int mode) {
             blocks.push_back(bits);
         }
     }
+    // 解密模式，读取二进制串，直接转换位64位的分组
     else if (mode == 1) {
         int blocksNum = len / 64;
         for (int i = 0; i < blocksNum; i++) {
@@ -183,14 +205,21 @@ vector<bitset<64>> PKCS_IN(string input, int mode) {
     return blocks;
 }
 
+/**
+ * @msg: 将DES后的内容写入文件或输出到控制台
+ * @param outputPath: 文件路径
+ * @param mode: 当前的模式 
+ */
 void PKCS_OUT(string outputPath, int mode) {
     if (mode != 0) {
         string str = readFileToString(outputPath);
         int len = str.length(); // 字符串长度
-        if (isdigit(str[len-1])) {
+        // 正确解密的情况下最后一块的最后一位必然保存有补齐字节的信息
+        // 若不为数字则必然解密错误
+        if (isdigit(str[len-1])) { 
             int num = str[len-1] - '0'; // 需要删除的位数
-            if (num < 0 || num > len) {
-                str.erase(len - num, num);
+            if (num > 0 && num < len) {
+                str.erase(len - num, num); // 删除DES前补齐的字节
             }
         }
         cout << "plain: " << str << endl;

@@ -3,7 +3,7 @@
 
 /**
  * @msg: 构造函数
- * @param t: 输入的内容
+ * @param s: 输入的内容
  * @parma k: 密钥
  * @param m: 选择的模式 （0 加密 / 1 解密）
  */
@@ -26,13 +26,13 @@ DES::DES(bitset<64> s, bitset<64> k, int m) {
 
 /**
  * @msg: 初始IP置换
- * @param t: 当前正在处理的明文块
+ * @param M: 当前正在处理的明文块
  */
 bitset<64> DES::initialPermutation(bitset<64> M) {
     // 初始IP置换
     bitset<64> M0;
     for (int i = 0; i < 64; i++) {
-        M0[63-i] = M[64-IP[i]]; // 置换表是从1开始, 而bitset下标是从0开始
+        M0[63-i] = M[64-IP[i]]; // 置换表是从1开始, 而bitset下标是从0开始, 且bitset为倒序存储
     }
     return M0;
 }
@@ -42,14 +42,11 @@ bitset<64> DES::initialPermutation(bitset<64> M) {
  * @param key: 密钥
  */
 void DES::subkeyGeneration(bitset<64> key) {
-    /* 生成16个子密钥 */
-
     /* PC-1置换 */
     bitset<56> realKey;
     for (int i = 0; i < 56; i++) {
         realKey[55-i] = key[64 - PC1[i]]; // 置换表是从1开始, 而bitset下标是从0开始
     }
-    
     // 16轮生成16个子密钥
     for (int i = 0; i < 16; i++) {
         bitset<28> C; // 前28位
@@ -60,7 +57,6 @@ void DES::subkeyGeneration(bitset<64> key) {
         for (int i = 0; i < 28; i++) {
             D[i] = realKey[i];
         }
-
         /* LS置换 */
         int shift = LS[i];
         bitset<28> tempC = C;
@@ -69,7 +65,6 @@ void DES::subkeyGeneration(bitset<64> key) {
             C[j] = tempC[(j + 28 - shift) % 28];
             D[j] = tempD[(j + 28 - shift) % 28];
         }
-
         // 将左右两部分重新组合成56位
         bitset<56> LR;
         for (int j = 28; j < 56; j++) {
@@ -78,7 +73,6 @@ void DES::subkeyGeneration(bitset<64> key) {
         for (int j = 0; j < 28; j++) {
             LR[j] = D[j];
         }
-
         /* PC-2 压缩置换 */
         for (int j = 0; j < 48; j++) {
             subkeys[i][47 - j] = LR[56 - PC2[j]];
@@ -88,8 +82,6 @@ void DES::subkeyGeneration(bitset<64> key) {
 
 /**
  * @msg: 轮函数
- * @param {type} 
- * @return: 
  */
 bitset<32> DES::feistel(bitset<32> R, bitset<48> Ki) {
     /* E 扩展 */
@@ -143,8 +135,6 @@ bitset<32> DES::feistel(bitset<32> R, bitset<48> Ki) {
 
 /**
  * @msg: 16轮迭代
- * @param {type} 
- * @return: 
  */
 bitset<64> DES::TIteration(bitset<64> M0) {
     bitset<32> L; // 前32位
@@ -183,8 +173,6 @@ bitset<64> DES::TIteration(bitset<64> M0) {
 
 /**
  * @msg: 逆置换
- * @param {type} 
- * @return: 
  */
 bitset<64> DES::inversePermutation(bitset<64> RL) {
     bitset<64> C;
@@ -196,8 +184,6 @@ bitset<64> DES::inversePermutation(bitset<64> RL) {
 
 /**
  * @msg: 输出64位
- * @param {type} 
- * @return: 
  */
 bitset<64> DES::outputText() {
     return cipherText;
