@@ -113,8 +113,7 @@ static int PC2[] = {
     46, 42, 50, 36, 29, 32};
 
 /* 左移表 */
-static int LS[] = {
-    1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+static int LS[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 
 bitset<64> charsToBitset(const char s[8]) {
     bitset<64> bits;
