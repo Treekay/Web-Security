@@ -220,6 +220,10 @@ void PKCS_OUT(string outputPath, int mode) {
             int num = str[len-1] - '0'; // 需要删除的位数
             if (num > 0 && num < len) {
                 str.erase(len - num, num); // 删除DES前补齐的字节
+                fstream file;
+                file.open("cipher", ios::binary | ios::out);
+                file << str;
+                file.close();
             }
         }
         cout << "plain: " << str << endl;
