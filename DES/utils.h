@@ -1,8 +1,8 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
-#include <VECTOR>
-#include <BITSET>
+#include <vector>
+#include <bitset>
 #include <cmath>
 #include <fstream>
 #include <sstream>
