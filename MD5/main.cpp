@@ -6,5 +6,6 @@ int main() {
     cin >> msg;
     cout << "md5: ";
     MD5 md5(msg);
+    system("pause");
     return 0;
 }
